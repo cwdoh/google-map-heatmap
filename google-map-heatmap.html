@@ -1,0 +1,269 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+An element providing a solution to no problem in particular.
+
+Example:
+
+    <google-map-heatmap></google-map-heatmap>
+
+@demo
+-->
+<dom-module id="google-map-heatmap">
+
+  <style>
+    :host {
+      display: none;
+    }
+  </style>
+
+  <template>
+  </template>
+
+</dom-module>
+
+<script>
+
+  Polymer({
+
+    is: 'google-map-heatmap',
+
+    properties: {
+      /**
+       * Map The map on which to display the layer.
+       */
+       googleMap: {
+        type: Object,
+        value: null,
+        notify: true,
+        observer: '_mapChanged'
+       },
+      /**
+       * The data points to display.
+       */
+      data: {
+        type: Array,
+        value: [],
+        notify: false
+      },
+      /**
+       * Specifies whether heatmaps dissipate on zoom. By default, the radius of influence of a data point is specified by the radius option only. When dissipating is disabled, the radius option is interpreted as a radius at zoom level 0.
+       */
+      dissipating: {
+        type: Boolean,
+        value: true,
+        notify: true,
+        reflectToAttribute: true,
+        observer: '_optionChanged'
+      },
+      /**
+       * The color gradient of the heatmap, specified as an array of CSS color strings. All CSS3 colors are supported except for extended named colors.
+       */
+      gradient: {
+        type: Array,
+        value: [],
+        notify: true
+      },
+      /**
+       * The maximum intensity of the heatmap. By default, heatmap colors are dynamically scaled according to the greatest concentration of points at any particular pixel on the map. This property allows you to specify a fixed maximum.
+       */
+      maxIntensity: {
+        type: Number,
+        value: 1,
+        notify: true,
+        reflectToAttribute: true,
+        observer: '_optionChanged'
+      },
+      /**
+       * The radius of influence for each data point, in pixels.
+       */
+      radius: {
+        type: Number,
+        value: 3,
+        notify: true,
+        reflectToAttribute: true,
+        observer: '_optionChanged'
+      },
+      /**
+       * The opacity of the heatmap, expressed as a number between 0 and 1. Defaults to 0.6.
+       */
+      opacity: {
+        type: Number,
+        value: 1,
+        notify: true,
+        reflectToAttribute: true,
+        observer: '_optionChanged'
+      }
+    },
+
+    // Element Lifecycle
+
+    ready: function() {
+      // `ready` is called after all elements have been configured, but
+      // propagates bottom-up. This element's children are ready, but parents
+      // are not.
+      //
+      // This is the point where you should make modifications to the DOM (when
+      // necessary), or kick off any processes the element wants to perform.
+    },
+
+    attached: function() {
+      this.async(function() {
+        
+      });
+    },
+
+    detached: function() {
+      this.remove();
+    },
+
+    // Element Behavior
+
+    /**
+     * Get color array from given RGBA to given tRGBA. Result array has (level + 1) size and transparent color at index 0.
+     *
+     * @method getColors
+     */
+    getColors: function(r, g, b, a, tr, tg, tb, ta, level) {
+      if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
+        return null;
+      }
+
+      var colors = [];
+      var fr = parseInt((tr - r) / level);
+      var fg = parseInt((tb - g) / level);
+      var fb = parseInt((tg - b) / level);
+      var fa = parseFloat((ta - a) / level);
+
+      for (var idx = 0 ; idx < level ; idx ++) {
+        r += fr;
+        g += fg;
+        b += fb;
+        a += fa;
+
+        colors.push('rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')');
+      }
+
+      return colors;
+    },
+
+    /**
+     * Set colors for gradient of heatmap.
+     *
+     * @method setGradient
+     */
+    setGradient: function(gradients) {
+      if (this._heatmap && gradients) {
+        this._heatmap.set('gradient', gradients);
+      }
+    },
+
+    _isAvailable: function() {
+      return this.googleMap? true: false;
+    },
+
+    _mapChanged: function() {
+      if (this._isAvailable() && this._heatmap !== null) {
+        if (this.googleMap) {
+          this._heatmap.setMap(this.googleMap.map);  
+        } else {
+          this.removeFromMap();
+        }        
+      }
+    },
+
+    _optionChanged: function() {
+      if (this._isAvailable() && this._heatmap !== null) {
+        this._heatmap.setOptions({
+          dissipating: this.dissipating,
+          maxIntensity: this.maxIntensity,
+          radius: this.radius,
+          opacity: this.opacity
+        });
+      }
+    },
+
+    _update: function(heatmap, data, options) {
+      if (!this._isAvailable()) {
+        return null;
+      }
+
+      if (heatmap === null) {
+        heatmap = new this._googleapi.visualization.HeatmapLayer({
+          data: data,
+          dissipating: true,
+          radius: this.radius,
+          map: this.googleMap.map,
+          maxIntensity: this.maxIntensity
+        });
+      } else {
+        heatmap.setData(data);
+      }
+
+      return heatmap;
+    },
+
+    /**
+     * Deactivate heatmap from google-map. Internally, this method remove heatmap layer from google-map, and set all references as null except data.
+     *
+     * @method deactivate
+     */
+    deactivate: function() {
+      if (this._isAvailable() && this._heatmap !== null) {
+        this._heatmap.setMap(null);
+
+        this.googleMap = null;
+        this._heatmap = null;
+      }
+    },
+
+    /**
+     * Activate heatmap from google-map. Internally, this method setup heatmap layer and set data if google-map-heatmap element has data. If element is already activated, call will be ignored.
+     *
+     * @method activate
+     */
+    activate: function() {
+      if (this._isAvailable() && this._heatmap !== null) {
+        return;
+      }
+
+      // access sibling or child google-map element of parent here
+      var gmap = this.parentNode.querySelector('google-map');
+      if (gmap) {
+        var self = this;
+
+        this.googleMap = gmap;
+        gmap.addEventListener('api-load', function(e) {
+          self._googleapi = e.target.api;
+        });
+
+        if (self.data.length > 0) {
+          self.setData(self.data);
+        }
+      }
+    },
+
+    /**
+     * Set heatmap data and create heatmap layer if needs. If element doesn't have reference to google-map, creating heatmap layer won't be executed.
+     *
+     * @method activate
+     */
+    setData: function(data) {
+      this._heatmap = this._update(this._heatmap, data);
+      if (this._heatmap) {
+        this.data = data;
+      }
+    }
+
+  });
+
+</script>
