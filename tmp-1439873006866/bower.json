@@ -1,0 +1,31 @@
+{
+  "name": "google-map-heatmap",
+  "version": "1.0.0",
+  "authors": [
+    "Chang W. Doh <changwook.doh@gmail.com>"
+  ],
+  "description": "An element providing a solution to support heatmap of google-map element.",
+  "keywords": [
+    "web-component",
+    "web-components",
+    "polymer",
+    "google-map",
+    "heatmap",
+    "google-map-heatmap"
+  ],
+  "main": "google-map-heatmap.html",
+  "license": "http://polymer.github.io/LICENSE.txt",
+  "homepage": "https://github.com/cwdoh/google-map-heatmap/",
+  "ignore": [
+    "/.*",
+    "/test/",
+    "/demo/"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.0.0"
+  },
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
+    "web-component-tester": "*"
+  }
+}
